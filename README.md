@@ -6,7 +6,7 @@ An implementation of a dynamic word cloud generator using D3.
 
 To generate, use a path to a CSV file: dwc.create("datafile.csv")
 
-Th CSV file should be formatted like this:
+The CSV file should be formatted like this:
 
 ```
 word,2006,2007,2008,2009,2010,2011,2012,2013,2014,font  
