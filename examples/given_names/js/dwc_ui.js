@@ -72,7 +72,7 @@
                 .on("drag", this.dragged)
                 .on("end", this.dragEnded));
 
-        window.onkeyup = function(e) {
+        window.onkeyup = function(e) { // animation on space press
             var key = e.keyCode ? e.keyCode : e.which;
 
             if (key == 32) {
@@ -96,73 +96,8 @@
                         this.stop();
                     }
                 });
-
-                // wordShapes
-                //     .transition()
-                //     .attr("font-size", function(d) {
-                //         return d.tp[2];
-                //     })
-                //     .attr("x", function(d) {
-                //         return d.x[2];
-                //     })
-                //     .attr("y", function(d) {
-                //         return d.y[2];
-                //     })
-                //     .attr("fill", function(d) {
-                //         return d.color[2];
-                //     })
-                //     .attr("transform", function(d) {
-                //         return "rotate(" + d.c[2] * maxRotationDeg + ", " + d.x[2] + ", " + d.y[2] + ")";
-                //     })
-                //     .duration(5000)
-                //     .ease(d3.easeLinear)
-                //     .on("end", function() {
-                //         console.log("animation ended.");
-                //     });
-
-                // d3.selectAll("circle")
-                //     .attr("cx", 30);
-                // animateAll(wordShapes, time, w, 1, timePointLabels.length - 1, maxRotationDeg);
             }
         }
-    }
-
-    function animateAll(wordShapes, time, w, tp, max, maxRotationDeg) {
-
-        wordShapes
-            .transition()
-            .attr("font-size", function(d) {
-                return d.tp[tp];
-            })
-            .attr("x", function(d) {
-                return d.x[tp];
-            })
-            .attr("y", function(d) {
-                return d.y[tp];
-            })
-            .attr("fill", function(d) {
-                return d.color[tp];
-            })
-            .attr("transform", function(d) {
-                return "rotate(" + d.c[tp] * maxRotationDeg + " " + d.x[tp] + ", " + d.y[tp] + ")";
-            })
-            .duration(500)
-            .ease(d3.easeLinear)
-            .on("end", function() {
-                if (tp < max) {
-                    animateAll(wordShapes, time, w, tp + 1, max);
-                }
-            });
-
-
-        // d3.selectAll("circle")
-        //     .transition()
-        //     .attr("cx", function(d) {
-        //         return w - 30;
-        //     })
-        //     .duration(3000)
-        //     .ease(d3.easeLinear);
-
     }
 
     dwc_ui.prototype.dragStarted = function(d) {

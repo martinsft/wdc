@@ -370,6 +370,9 @@
                     this.setTime(i + j * (1 / interpolation)); // TODO: Collisions currently only work with a single interpolation frame
                     var prevBmpInterp = this.generateBMPMultiple(previous);
                     var nextBmpInterp = this.generateBMP(next, false);
+
+                    this.drawBMP(prevBmpInterp, [0, 0, 0, 255]);
+                    this.drawBMP(nextBmpInterp, [0, 255, 0, 255]);
                     timePositionsPreviousInterp.push(prevBmpInterp);
                     timePositionsNextInterp.push(nextBmpInterp);
                 }
@@ -428,7 +431,7 @@
         var movX = 0;
         var movY = 0;
 
-        var speed = 1;
+        var speed = 3;
         var maxMov = w / 8;
 
         var dx = -offsetX;
