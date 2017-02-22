@@ -77,10 +77,52 @@
 
             if (key == 32) {
                 console.log("Space pressed.");
-                dwc.setTime(0);
-                d3.selectAll("circle")
-                    .attr("cx", 30);
-                animateAll(wordShapes, time, w, 1, timePointLabels.length - 1, maxRotationDeg);
+                //dwc.setTime(1);
+
+                var animationTime = 0;
+
+                var animationTimer = d3.timer(function() {
+                    if (animationTime < timePointLabels.length - 1) {
+                        dwc.setTime(animationTime);
+
+                        d3.selectAll("circle")
+                            .attr("cx", function(d) {
+                                return 30 + animationTime / (timePointLabels.length - 1) * (w - pad * 2);
+                            });
+
+
+                        animationTime += 0.01;
+                    } else {
+                        this.stop();
+                    }
+                });
+
+                // wordShapes
+                //     .transition()
+                //     .attr("font-size", function(d) {
+                //         return d.tp[2];
+                //     })
+                //     .attr("x", function(d) {
+                //         return d.x[2];
+                //     })
+                //     .attr("y", function(d) {
+                //         return d.y[2];
+                //     })
+                //     .attr("fill", function(d) {
+                //         return d.color[2];
+                //     })
+                //     .attr("transform", function(d) {
+                //         return "rotate(" + d.c[2] * maxRotationDeg + ", " + d.x[2] + ", " + d.y[2] + ")";
+                //     })
+                //     .duration(5000)
+                //     .ease(d3.easeLinear)
+                //     .on("end", function() {
+                //         console.log("animation ended.");
+                //     });
+
+                // d3.selectAll("circle")
+                //     .attr("cx", 30);
+                // animateAll(wordShapes, time, w, 1, timePointLabels.length - 1, maxRotationDeg);
             }
         }
     }

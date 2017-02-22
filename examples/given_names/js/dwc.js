@@ -348,20 +348,33 @@
     dwc.prototype.findPosAllTime = function(previous, next, interpolation) {
 
         var timePositionsPrevious = [];
-        var timePostionsNext = [];
+        var timePositionsNext = [];
+
+        var timePositionsPreviousInterp = [];
+        var timePositionsNextInterp = [];
+
+        interpolation = 2;
 
         for (var i = 0; i < timePointLabels.length; i++) {
 
             this.setTime(i);
-
             var prevBmp = this.generateBMPMultiple(previous);
             var nextBmp = this.generateBMP(next, false);
-            // this.drawBMP(prevBmp, [0, 0, 0, 255]);
-            // this.drawBMP(nextBmp, [0, 255, 0, 255]);
             timePositionsPrevious.push(prevBmp);
-            timePostionsNext.push(nextBmp);
-        }
+            timePositionsNext.push(nextBmp);
 
+            if (i < timePointLabels.length - 1) {
+
+                for (var j = 1; j < interpolation; j++) {
+
+                    this.setTime(i + j * (1 / interpolation)); // TODO: Collisions currently only work with a single interpolation frame
+                    var prevBmpInterp = this.generateBMPMultiple(previous);
+                    var nextBmpInterp = this.generateBMP(next, false);
+                    timePositionsPreviousInterp.push(prevBmpInterp);
+                    timePositionsNextInterp.push(nextBmpInterp);
+                }
+            }
+        }
 
         var posFound = false;
         currentX = w / 2;
@@ -372,35 +385,42 @@
             for (var i = 0; i < timePointLabels.length; i++) {
 
                 // collide at this point in time
-                if (this.collideBMP(timePositionsPrevious[i], timePostionsNext[i])) {
-                    //console.log("found collision at time point " + i);
+                if (this.collideBMP(timePositionsPrevious[i], timePositionsNext[i])) {
                     break;
                 }
+                if (i < timePointLabels.length - 1) {
+
+                    if (this.collideBMP(timePositionsPreviousInterp[i], timePositionsNextInterp[i])) {
+                        break;
+                    }
+                }
                 if (i === timePointLabels.length - 1) {
+
                     posFound = true;
                     this.setTime(1);
-                    // this.drawBMP(timePositionsPrevious[1], [0, 0, 0, 255]);
-                    // this.drawBMP(timePostionsNext[1], [0, 0, 0, 255]);
                     console.log("found position at all points in time for word " + words[next].text);
                 }
             }
             if (!posFound) {
-                var movePos = this.moveSpiral(7);
+
+                var movePos = this.moveSpiral(6);
+
                 for (var i = 0; i < timePointLabels.length; i++) {
-                    this.moveBMP(timePostionsNext[i], timePostionsNext[i].x + movePos[0], timePostionsNext[i].y + movePos[1]);
+
+                    this.moveBMP(timePositionsNext[i], timePositionsNext[i].x + movePos[0], timePositionsNext[i].y + movePos[1]);
+
+                    if (i < timePointLabels.length - 1) {
+
+                        this.moveBMP(timePositionsNextInterp[i], timePositionsNextInterp[i].x + movePos[0], timePositionsNextInterp[i].y + movePos[1]);
+                    }
                 }
             }
-            // ctx.clearRect(0, 0, w, h);
-            // for (var i = 0; i < timePointLabels.length; i++) {
-            //     this.drawBMP(timePostionsNext[i], [0, 255, 0, 255]);
-            // }
         }
 
         // apply offset
         var offsetX = currentX - w / 2;
         var offsetY = currentY - h / 2;
         for (var i = 0; i < timePointLabels.length; i++) {
-            // this.drawBMP(timePostionsNext[i], [0, 255, 0, 255]);
             words[next].x[i] += offsetX;
             words[next].y[i] += offsetY;
         }
@@ -419,25 +439,36 @@
 
         // move closer together. direction is negative offset
         for (var i = 0; i < timePointLabels.length; i++) {
+
             if (words[next].tp[i] > invisThresh) { // if too small, don't move towards center
-                var origX = timePostionsNext[i].x;
-                var origY = timePostionsNext[i].y;
-                while (!this.collideBMP(timePositionsPrevious[i], timePostionsNext[i]) && (Math.abs(offsetX + movX) > speed + 1) &&
+
+                var origX = timePositionsNext[i].x;
+                var origY = timePositionsNext[i].y;
+                var interpCollide = false;
+                while (!this.collideBMP(timePositionsPrevious[i], timePositionsNext[i]) && (Math.abs(offsetX + movX) > speed + 1) &&
                     movX < maxMov &&
-                    movY < maxMov) {
-                    this.moveBMP(timePostionsNext[i], timePostionsNext[i].x + dirX, timePostionsNext[i].y + dirY);
-                    // this.drawBMP(timePostionsNext[i], [0, 255, 255, 255]);
-                    // this.drawBMP(timePositionsPrevious[i], [255, 0, 0, 255]);
+                    movY < maxMov &&
+                    !interpCollide) {
+
+                    if (i < timePointLabels.length - 1) {
+                        if (this.collideBMP(timePositionsPreviousInterp[i], timePositionsNextInterp[i])) {
+                            interpCollide = true; // found collision in interpolated frame
+                        } else {
+                            this.moveBMP(timePositionsPreviousInterp[i], timePositionsPreviousInterp[i].x + dirX, timePositionsPreviousInterp[i].y + dirY);
+                        }
+                    }
+
+                    this.moveBMP(timePositionsNext[i], timePositionsNext[i].x + dirX, timePositionsNext[i].y + dirY);
                     movX += dirX;
                     movY += dirY;
                 }
-                words[next].x[i] = timePostionsNext[i].x + timePostionsNext[i].cx - dirX;
-                words[next].y[i] = timePostionsNext[i].y + timePostionsNext[i].cy - dirY;
+
+                words[next].x[i] = timePositionsNext[i].x + timePositionsNext[i].cx - dirX;
+                words[next].y[i] = timePositionsNext[i].y + timePositionsNext[i].cy - dirY;
                 var movX = 0;
                 var movY = 0;
             }
         }
-
     }
 
     // draw word from SVG text
