@@ -16,10 +16,13 @@
     var minValue = Number.MAX_VALUE;
     var maxValue = Number.MIN_VALUE;
 
-    var maxRotationRad = Math.PI / 6;
-    var maxRotationDeg = 30;
+    var maxRotationRad = Math.PI / 4;
+    var maxRotationDeg = 45;
     var resizeFactor = 0.5;
     var invisThresh = 6;
+    var colorMin = "rgb(255, 0, 0)";
+    var colorMax = "rgb(0, 255, 0)";
+    var colorNeutral = "rgb(1, 1, 0)";
 
     // constructor
     function dwc() {
@@ -30,8 +33,25 @@
         return this;
     }
 
+    // load a saved wordcloud
+    dwc.prototype.load = function(wordSource) {
+        console.log("loading wordclouds isn't currently supported!");
+    }
+
     // create a new wordcloud based on a given source file in CSV format
-    dwc.prototype.create = function(wordSource) {
+    // wordSource: a CSV file with the word size data
+    // _colorMin: the color for shrinking words
+    // _colorMax: the color for growing words
+    // _colorNeutral: the color for words not changing in size
+    // _maxRotationDeg: the maximum rotation in degrees
+    // _resizeFactor: The resize factor for converting the CSV values to SVG text size
+    dwc.prototype.create = function(wordSource, _colorMin, _colorMax, _colorNeutral, _maxRotationDeg, _resizeFactor) {
+        colorMin = _colorMin;
+        colorMax = _colorMax;
+        colorNeutral = _colorNeutral;
+        maxRotationDeg = _maxRotationDeg;
+        maxRotationRad = maxRotationDeg * Math.PI / 180;
+        resizeFactor = resizeFactor;
         console.log("Attempting to create dynamic word cloud from data file: " + wordSource);
         this.readWordsCSV(wordSource);
     }
@@ -71,9 +91,9 @@
                         delta = timePoints[j] / timePoints[j - 1];
 
                         if (delta < 1) {
-                            changes[j] = Math.max(0.5, delta) * 2 - 1;
+                            changes[j] = delta;
                         } else if (delta > 1) {
-                            changes[j] = -Math.min(2.0, delta) * 0.5;
+                            changes[j] = -Math.min(3.5, delta) / 3.5;
                         } else {
                             changes[j] = 0;
                         }
@@ -82,9 +102,11 @@
                             colors[j] = "rgb(255, 255, 255, 0.0)";
                         } else {
                             if (changes[j] > 0) {
-                                colors[j] = "rgb(" + (255 * changes[j]) + ", 0, 0)";
+                                colors[j] = d3.interpolate(colorNeutral, colorMin)(changes[j]);
+                            } else if (changes[j] < 0) {
+                                colors[j] = d3.interpolate(colorNeutral, colorMax)(-changes[j]);
                             } else {
-                                colors[j] = "rgb(0, " + (255 * -changes[j]) + ", 0)";
+                                colors[j] = colorNeutral;
                             }
                         }
                     } else {
@@ -147,11 +169,7 @@
                 return d.y[0];
             })
             .attr("fill", function(d) {
-                if (d.c[0] > 0) {
-                    return "rgb(" + (255 * d.c[0]) + ", 0, 0)";
-                } else {
-                    return "rgb(0, " + (255 * -d.c[0]) + ", 0)";
-                }
+                return d.color[0];
             });
 
         return svg;
@@ -220,7 +238,6 @@
 
         svg = this.generateSVG();
         dwc_ui.create(w, h, wordShapes, svg, time, words, timePointLabels, maxRotationDeg);
-
         this.setTime(timePointLabels.length - 1);
 
         var canvas = document.createElement("canvas");
@@ -247,8 +264,19 @@
         var duration = endTime - startTime; // milliseconds
 
         console.log("Done (" + words.length + " words, " + timePointLabels.length + " time points, " + (duration / 1000) + "s).");
+
         this.setTime(timePointLabels.length - 1);
+
+
+        // // this is just code to download a json representation of the "words" object to use for pre-generated layouts
+        // var wordsAsString = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(words));
+        // var anchor = document.getElementById('anchorElement');
+        // anchor.setAttribute("href", wordsAsString);
+        // anchor.setAttribute("download", "test.json");
+        // anchor.click();
     }
+
+
 
     dwc.prototype.placeOptimizedOrder = function() {
 
@@ -353,7 +381,7 @@
         var timePositionsPreviousInterp = [];
         var timePositionsNextInterp = [];
 
-        interpolation = 2;
+        interpolation = 1;
 
         for (var i = 0; i < timePointLabels.length; i++) {
 
@@ -365,14 +393,14 @@
 
             if (i < timePointLabels.length - 1) {
 
-                for (var j = 1; j < interpolation; j++) {
+                for (var j = 1; j <= interpolation; j++) {
 
-                    this.setTime(i + j * (1 / interpolation)); // TODO: Collisions currently only work with a single interpolation frame
+                    this.setTime(i + j * (1 / (interpolation + 1))); // TODO: Collisions currently only work with a single interpolation frame
                     var prevBmpInterp = this.generateBMPMultiple(previous);
                     var nextBmpInterp = this.generateBMP(next, false);
 
-                    this.drawBMP(prevBmpInterp, [0, 0, 0, 255]);
-                    this.drawBMP(nextBmpInterp, [0, 255, 0, 255]);
+                    // this.drawBMP(prevBmpInterp, [0, 0, 0, 255]);
+                    // this.drawBMP(nextBmpInterp, [0, 255, 0, 255]);
                     timePositionsPreviousInterp.push(prevBmpInterp);
                     timePositionsNextInterp.push(nextBmpInterp);
                 }
@@ -393,8 +421,11 @@
                 }
                 if (i < timePointLabels.length - 1) {
 
-                    if (this.collideBMP(timePositionsPreviousInterp[i], timePositionsNextInterp[i])) {
-                        break;
+                    // check interpolation steps
+                    for (var j = i * interpolation; j <= i * interpolation + (interpolation - 1); j++) {
+                        if (this.collideBMP(timePositionsPreviousInterp[j], timePositionsNextInterp[j])) {
+                            break;
+                        }
                     }
                 }
                 if (i === timePointLabels.length - 1) {
@@ -414,7 +445,10 @@
 
                     if (i < timePointLabels.length - 1) {
 
-                        this.moveBMP(timePositionsNextInterp[i], timePositionsNextInterp[i].x + movePos[0], timePositionsNextInterp[i].y + movePos[1]);
+                        for (var j = i * interpolation; j <= i * interpolation + (interpolation - 1); j++) {
+
+                            this.moveBMP(timePositionsNextInterp[j], timePositionsNextInterp[j].x + movePos[0], timePositionsNextInterp[j].y + movePos[1]);
+                        }
                     }
                 }
             }
@@ -454,10 +488,16 @@
                     !interpCollide) {
 
                     if (i < timePointLabels.length - 1) {
-                        if (this.collideBMP(timePositionsPreviousInterp[i], timePositionsNextInterp[i])) {
-                            interpCollide = true; // found collision in interpolated frame
-                        } else {
-                            this.moveBMP(timePositionsPreviousInterp[i], timePositionsPreviousInterp[i].x + dirX, timePositionsPreviousInterp[i].y + dirY);
+
+                        for (var j = i * interpolation; j <= i * interpolation + (interpolation - 1); j++) {
+
+                            if (this.collideBMP(timePositionsPreviousInterp[j], timePositionsNextInterp[j])) {
+
+                                interpCollide = true; // found collision in interpolated frame
+                            } else {
+
+                                this.moveBMP(timePositionsPreviousInterp[j], timePositionsPreviousInterp[j].x + dirX, timePositionsPreviousInterp[j].y + dirY);
+                            }
                         }
                     }
 
@@ -668,6 +708,8 @@
             if (bgBmp.data[i + start] & wordBmp.data[i]) {
                 //this.drawBitBlock(bgBmp, i + start, "#FF0000");
                 return true; // collision found
+            } else {
+                //this.drawBitBlock(bgBmp, i + start, "#00FF00");
             }
         }
 
