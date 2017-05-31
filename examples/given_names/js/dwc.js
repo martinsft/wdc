@@ -267,7 +267,6 @@
 
         this.setTime(timePointLabels.length - 1);
 
-
         // // this is just code to download a json representation of the "words" object to use for pre-generated layouts
         // var wordsAsString = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(words));
         // var anchor = document.getElementById('anchorElement');
